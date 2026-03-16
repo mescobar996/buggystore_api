@@ -1,86 +1,37 @@
-const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'buggystore.db');
+const DB_PATH = path.join(__dirname, 'buggystore_db.json');
 
-let db;
+const defaultDb = {
+  users: [],
+  products: [
+    { id: 1, name: 'Laptop Pro 15', description: 'Laptop de alto rendimiento', price: 1200.00, stock: 10, category: 'electronics', created_at: new Date().toISOString() },
+    { id: 2, name: 'Mouse Inalámbrico', description: 'Mouse ergonómico inalámbrico', price: 25.99, stock: 50, category: 'accessories', created_at: new Date().toISOString() },
+    { id: 3, name: 'Teclado Mecánico', description: 'Teclado con switches azules', price: 89.99, stock: 30, category: 'accessories', created_at: new Date().toISOString() },
+    { id: 4, name: 'Monitor 27"', description: 'Monitor Full HD', price: 350.00, stock: 15, category: 'electronics', created_at: new Date().toISOString() },
+    { id: 5, name: 'Auriculares Bluetooth', description: 'Auriculares con cancelación de ruido', price: 149.99, stock: 20, category: 'accessories', created_at: new Date().toISOString() }
+  ],
+  orders: [],
+  order_items: [],
+  _counters: { users: 0, products: 5, orders: 0, order_items: 0 }
+};
 
-async function getDb() {
-  if (db) return db;
-  const SQL = await initSqlJs();
-
+function getDb() {
   if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
-  } else {
-    db = new SQL.Database();
-    initSchema();
-    saveDb();
+    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
   }
-  return db;
+  saveDb(defaultDb);
+  return JSON.parse(JSON.stringify(defaultDb));
 }
 
-function saveDb() {
-  const data = db.export();
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+function saveDb(data) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-function initSchema() {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT DEFAULT 'customer',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT,
-      price REAL NOT NULL,
-      stock INTEGER,
-      category TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      total REAL,
-      status TEXT DEFAULT 'pending',
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS order_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id INTEGER NOT NULL,
-      product_id INTEGER NOT NULL,
-      quantity INTEGER NOT NULL,
-      unit_price REAL NOT NULL,
-      FOREIGN KEY (order_id) REFERENCES orders(id),
-      FOREIGN KEY (product_id) REFERENCES products(id)
-    );
-  `);
-
-  // Seed data
-  db.run(`INSERT INTO products (name, description, price, stock, category) VALUES
-    ('Laptop Pro 15', 'Laptop de alto rendimiento', 1200.00, 10, 'electronics'),
-    ('Mouse Inalámbrico', 'Mouse ergonómico inalámbrico', 25.99, 50, 'accessories'),
-    ('Teclado Mecánico', 'Teclado con switches azules', 89.99, 30, 'accessories'),
-    ('Monitor 27"', 'Monitor Full HD', 350.00, 15, 'electronics'),
-    ('Auriculares Bluetooth', 'Auriculares con cancelación de ruido', 149.99, 20, 'accessories')
-  `);
+function nextId(db, table) {
+  db._counters[table] = (db._counters[table] || 0) + 1;
+  return db._counters[table];
 }
 
-module.exports = { getDb, saveDb };
+module.exports = { getDb, saveDb, nextId };
