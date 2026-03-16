@@ -15,19 +15,133 @@ BuggyStore es una API de e-commerce construida con **Node.js + Express + SQLite*
 
 ---
 
-## Instalación y ejecución
+## ⚙️ Instalación y ejecución
 
 ```bash
-# Clonar o descargar el proyecto
-cd buggystore
+# 1. Clonar o descargar el proyecto
+cd BuggyStore_API
 
-# Instalar dependencias
+# 2. Instalar dependencias
 npm install
 
-# Ejecutar la API
+# 3. Ejecutar la API
 node app.js
 
-# La API corre en http://localhost:3000
+# La API corre en http://localhost:8080
+```
+
+> **⚠️ Nota para usuarios Windows:** Si al ejecutar `node app.js` aparece un error de puerto,
+> probablemente el puerto 8080 ya está en uso. Podés usar un puerto alternativo:
+> ```bash
+> PORT=8081 node app.js
+> ```
+
+---
+
+## 🧪 Guía de pruebas paso a paso (para QA juniors)
+
+### Requisitos previos
+- Tener Node.js instalado ([descargar acá](https://nodejs.org))
+- Tener Postman instalado **o** Git Bash / terminal con `curl`
+
+---
+
+### Paso 1 — Levantar el servidor
+
+Abrí una terminal en la carpeta del proyecto y ejecutá:
+
+```bash
+node app.js
+```
+
+Deberías ver:
+```
+BuggyStore API corriendo en http://localhost:8080
+Health check: http://localhost:8080/health
+```
+
+> 🔴 **La terminal tiene que quedar abierta** mientras estás probando. El servidor vive en esa ventana.
+> Abrí una segunda terminal para ejecutar los comandos de prueba.
+
+---
+
+### Paso 2 — Verificar que la API responde
+
+En la segunda terminal:
+
+```bash
+curl http://localhost:8080/health
+```
+
+Respuesta esperada:
+```json
+{"status":"ok","app":"BuggyStore API","version":"1.0.0"}
+```
+
+✅ Si ves eso, la API está funcionando.
+
+---
+
+### Paso 3 — Probar los endpoints (con curl)
+
+#### Registrar usuario
+```bash
+curl -X POST http://localhost:8080/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ana Lopez","email":"ana@email.com","password":"12345678"}'
+```
+
+#### Login
+```bash
+curl -X POST http://localhost:8080/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ana@email.com","password":"12345678"}'
+```
+
+#### Listar productos
+```bash
+curl http://localhost:8080/api/products
+```
+
+#### Crear una orden
+```bash
+curl -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":1,"items":[{"product_id":1,"quantity":2},{"product_id":2,"quantity":3}]}'
+```
+
+---
+
+### Paso 4 — Probar los bugs intencionales
+
+Intentá reproducir cada bug del catálogo (sección más abajo). Para cada uno:
+
+1. Ejecutá el request que debería disparar el bug
+2. Observá el comportamiento real de la API
+3. Compará con el comportamiento esperado
+4. Documentá el hallazgo en tu bug report
+
+**Ejemplo — BUG-001:**
+```bash
+# Debería fallar, pero NO lo hace (eso es el bug):
+curl -X POST http://localhost:8080/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"SINAARROBA","password":"12345678"}'
+```
+
+---
+
+### Paso 5 — Resetear la base de datos
+
+La API guarda datos en `buggystore_db.json`. Si querés empezar desde cero:
+
+```bash
+# Detené el servidor (Ctrl+C en la primera terminal)
+# Borrá el archivo de base de datos:
+rm buggystore_db.json
+
+# Reiniciá el servidor:
+node app.js
 ```
 
 ---
@@ -156,13 +270,14 @@ CREATE TABLE order_items (
 ## Estructura del proyecto
 
 ```
-buggystore/
+BuggyStore_API/
 ├── app.js              # Entry point
-├── db.js               # Inicialización SQLite
+├── db.js               # Inicialización SQLite (JSON persistente)
 ├── routes/
 │   ├── users.js        # Módulo usuarios (BUG-001 al 006)
 │   ├── products.js     # Módulo productos (BUG-007 al 011)
 │   └── orders.js       # Módulo órdenes (BUG-012 al 016)
+├── buggystore_db.json  # Base de datos (se crea al primer inicio)
 ├── package.json
 └── README.md
 ```
@@ -183,8 +298,8 @@ Para completar el portfolio, generá los siguientes documentos:
 
 ## Tecnologías
 
-- Node.js + Express
-- sql.js (SQLite en memoria)
+- Node.js + Express 5
+- JSON persistente en disco (db.js)
 - jsonwebtoken
 
 ---
